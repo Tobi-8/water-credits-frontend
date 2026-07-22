@@ -20,7 +20,8 @@ import {
 } from '../../../shared/components/data-table/data-table.component';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge';
 import { SearchInputComponent } from '../../../shared/components/search-input/search-input';
-import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state';
+import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner';
+import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state';
 import { CreditAmountPipe } from '../../../shared/pipes/credit-amount.pipe';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 import { StellarAddressPipe } from '../../../shared/pipes/stellar-address.pipe';
@@ -42,7 +43,8 @@ import { NumberAbbreviatePipe } from '../../../shared/pipes/number-abbreviate.pi
     DataTableComponent,
     StatusBadgeComponent,
     SearchInputComponent,
-    LoadingStateComponent,
+    LoadingSpinnerComponent,
+    EmptyStateComponent,
     CreditAmountPipe,
     DateFormatPipe,
     StellarAddressPipe,
@@ -87,74 +89,84 @@ import { NumberAbbreviatePipe } from '../../../shared/pipes/number-abbreviate.pi
         </div>
       </div>
 
-      <app-loading-state
-        [loading]="loading$ | async"
-        [error]="error$ | async"
-        [data]="listings$ | async"
-        skeletonType="table"
-        emptyTitle="No listings found"
-        emptyMessage="There are no marketplace listings matching your criteria."
-        retryLabel="Retry"
-        (retry)="reload()"
+      <app-loading-spinner
+        *ngIf="loading$ | async"
+        size="lg"
+        label="Loading listings..."
+      ></app-loading-spinner>
+
+      <div
+        *ngIf="(error$ | async) && !(loading$ | async)"
+        class="card p-5 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/10"
       >
-        <app-data-table
-          [columns]="columns"
-          [data]="(listings$ | async) || []"
-          [loading]="false"
-          [pagination]="pagination$ | async"
-          (page)="onPageChange($event)"
-        >
-          <ng-template #row let-row let-col="column">
-            <ng-container [ngSwitch]="col.key">
-              <ng-template ngSwitchCase="projectName">
-                <span class="font-medium text-slate-900 dark:text-white">{{
-                  row.projectName
-                }}</span>
-              </ng-template>
-              <ng-template ngSwitchCase="sellerName">
-                <span class="text-slate-600 dark:text-slate-400">{{
-                  row.sellerName || (row.sellerId | stellarAddress)
-                }}</span>
-              </ng-template>
-              <ng-template ngSwitchCase="amount">
-                <span class="font-mono text-slate-700 dark:text-slate-300">{{
-                  row.amount | creditAmount
-                }}</span>
-              </ng-template>
-              <ng-template ngSwitchCase="price">
-                <span class="font-mono text-slate-700 dark:text-slate-300"
-                  >{{ row.price | numberAbbreviate }} XLM</span
-                >
-              </ng-template>
-              <ng-template ngSwitchCase="totalValue">
-                <span class="font-mono text-slate-700 dark:text-slate-300"
-                  >{{ row.totalValue | numberAbbreviate }} XLM</span
-                >
-              </ng-template>
-              <ng-template ngSwitchCase="status">
-                <app-status-badge [status]="row.status"></app-status-badge>
-              </ng-template>
-              <ng-template ngSwitchCase="createdAt">
-                <span class="text-slate-500 dark:text-slate-400">{{
-                  row.createdAt | dateFormat: 'short'
-                }}</span>
-              </ng-template>
-              <ng-template ngSwitchCase="actions">
-                <button
-                  *ngIf="row.status === 'active'"
-                  (click)="buyListing(row)"
-                  class="btn btn-sm btn-primary"
-                >
-                  Buy
-                </button>
-              </ng-template>
-              <ng-template ngSwitchDefault>
-                {{ row[col.key] }}
-              </ng-template>
-            </ng-container>
-          </ng-template>
-        </app-data-table>
-      </app-loading-state>
+        <p class="text-sm text-red-600 dark:text-red-400">{{ error$ | async }}</p>
+        <button (click)="reload()" class="btn btn-sm btn-outline mt-2">Retry</button>
+      </div>
+
+      <app-empty-state
+        *ngIf="!(loading$ | async) && !(error$ | async) && (listings$ | async)?.length === 0"
+        title="No listings found"
+        message="There are no marketplace listings matching your criteria."
+        actionLabel="Create Listing"
+        (action)="router.navigate(['/marketplace/new'])"
+      ></app-empty-state>
+
+      <app-data-table
+        *ngIf="!(loading$ | async) && (listings$ | async)?.length"
+        [columns]="columns"
+        [data]="(listings$ | async) || []"
+        [loading]="false"
+        [pagination]="pagination$ | async"
+        (page)="onPageChange($event)"
+      >
+        <ng-template #row let-row let-col="column">
+          <ng-container [ngSwitch]="col.key">
+            <ng-template ngSwitchCase="projectName">
+              <span class="font-medium text-slate-900 dark:text-white">{{ row.projectName }}</span>
+            </ng-template>
+            <ng-template ngSwitchCase="sellerName">
+              <span class="text-slate-600 dark:text-slate-400">{{
+                row.sellerName || (row.sellerId | stellarAddress)
+              }}</span>
+            </ng-template>
+            <ng-template ngSwitchCase="amount">
+              <span class="font-mono text-slate-700 dark:text-slate-300">{{
+                row.amount | creditAmount
+              }}</span>
+            </ng-template>
+            <ng-template ngSwitchCase="price">
+              <span class="font-mono text-slate-700 dark:text-slate-300"
+                >{{ row.price | numberAbbreviate }} XLM</span
+              >
+            </ng-template>
+            <ng-template ngSwitchCase="totalValue">
+              <span class="font-mono text-slate-700 dark:text-slate-300"
+                >{{ row.totalValue | numberAbbreviate }} XLM</span
+              >
+            </ng-template>
+            <ng-template ngSwitchCase="status">
+              <app-status-badge [status]="row.status"></app-status-badge>
+            </ng-template>
+            <ng-template ngSwitchCase="createdAt">
+              <span class="text-slate-500 dark:text-slate-400">{{
+                row.createdAt | dateFormat: 'short'
+              }}</span>
+            </ng-template>
+            <ng-template ngSwitchCase="actions">
+              <button
+                *ngIf="row.status === 'active'"
+                (click)="buyListing(row)"
+                class="btn btn-sm btn-primary"
+              >
+                Buy
+              </button>
+            </ng-template>
+            <ng-template ngSwitchDefault>
+              {{ row[col.key] }}
+            </ng-template>
+          </ng-container>
+        </ng-template>
+      </app-data-table>
     </div>
   `,
 })

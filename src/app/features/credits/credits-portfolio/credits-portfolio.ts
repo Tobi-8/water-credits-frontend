@@ -16,7 +16,7 @@ import { CreditAmountPipe } from '../../../shared/pipes/credit-amount.pipe';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 import { StellarAddressPipe } from '../../../shared/pipes/stellar-address.pipe';
 import { NumberAbbreviatePipe } from '../../../shared/pipes/number-abbreviate.pipe';
-import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state';
+import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state';
 import {
   DataTableComponent,
@@ -33,7 +33,6 @@ import * as CreditsActions from '../../../core/store/credits/credits.actions';
 import {
   selectPortfolio,
   selectCreditsLoading,
-  selectCreditsError,
   selectCreditTransactions,
 } from '../../../core/store/credits/credits.selectors';
 import {
@@ -65,7 +64,7 @@ import {
     DateFormatPipe,
     StellarAddressPipe,
     NumberAbbreviatePipe,
-    LoadingStateComponent,
+    LoadingSpinnerComponent,
     EmptyStateComponent,
     DataTableComponent,
     RetireCreditsModalComponent,
@@ -86,16 +85,11 @@ import {
         </button>
       </div>
 
-      <app-loading-state
-        [loading]="loading$ | async"
-        [error]="error$ | async"
-        [data]="portfolio$ | async"
-        skeletonType="stat-card"
-        emptyTitle="No portfolio data"
-        emptyMessage="We couldn't load your credit portfolio. Try refreshing."
-        retryLabel="Refresh"
-        (retry)="refresh()"
-      >
+      <div *ngIf="loading$ | async" class="py-20">
+        <app-loading-spinner size="lg" label="Loading portfolio..."></app-loading-spinner>
+      </div>
+
+      <ng-container *ngIf="!(loading$ | async)">
         <div *ngIf="portfolio$ | async as portfolio">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div class="card p-5">
@@ -284,7 +278,16 @@ import {
             </div>
           </div>
         </div>
-      </app-loading-state>
+
+        <div *ngIf="(portfolio$ | async) === null && !(loading$ | async)">
+          <app-empty-state
+            title="No portfolio data"
+            message="We couldn't load your credit portfolio. Try refreshing."
+            actionLabel="Refresh"
+            (action)="refresh()"
+          ></app-empty-state>
+        </div>
+      </ng-container>
     </div>
 
     <app-retire-credits-modal
@@ -298,7 +301,6 @@ import {
 export class CreditsPortfolioComponent implements OnInit, OnDestroy {
   protected portfolio$: Observable<CreditPortfolio | null>;
   protected loading$: Observable<boolean>;
-  protected error$: Observable<string | null>;
   protected transactions$: Observable<CreditTransaction[]>;
 
   protected showRetireModal = false;
@@ -333,7 +335,6 @@ export class CreditsPortfolioComponent implements OnInit, OnDestroy {
   ) {
     this.portfolio$ = this.store.select(selectPortfolio);
     this.loading$ = this.store.select(selectCreditsLoading);
-    this.error$ = this.store.select(selectCreditsError);
     this.transactions$ = this.store.select(selectCreditTransactions);
   }
 

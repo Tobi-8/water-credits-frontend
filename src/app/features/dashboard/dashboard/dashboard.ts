@@ -15,8 +15,11 @@ import {
   selectCreditsOverTime,
   selectRecentRetirements,
   selectDashboardLoading,
+  selectAnalyticsError,
 } from '../../../core/store/analytics/analytics.selectors';
 import { AppState } from '../../../core/store/app.state';
+import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state';
+import { selectLoadingState } from '../../../shared/store/loading-state.selector';
 import {
   LucideAngularModule,
   Droplets,
@@ -38,6 +41,7 @@ import {
     CreditAmountPipe,
     DateFormatPipe,
     LucideAngularModule,
+    LoadingStateComponent,
   ],
   template: `
     <div class="space-y-6">
@@ -57,13 +61,12 @@ import {
         </div>
       </div>
 
-      <div *ngIf="loading$ | async" class="flex items-center justify-center py-20">
-        <div
-          class="animate-spin w-8 h-8 border-2 border-stellar-blue border-t-transparent rounded-full"
-        ></div>
-      </div>
-
-      <ng-container *ngIf="!(loading$ | async)">
+      <app-loading-state
+        [loading]="(dashboardState$ | async)?.loading ?? true"
+        [error]="(dashboardState$ | async)?.error ?? null"
+        [empty]="false"
+        skeleton="stat-card"
+      >
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="card p-5">
             <div class="flex items-center justify-between mb-3">
@@ -240,7 +243,7 @@ import {
             </div>
           </div>
         </div>
-      </ng-container>
+      </app-loading-state>
     </div>
   `,
 })
@@ -249,8 +252,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   protected overview$: Observable<AnalyticsOverview | null>;
   protected creditsOverTime$: Observable<CreditsOverTimePoint[]>;
   protected recentRetirements$: Observable<RecentRetirement[]>;
-  /** Accumulates live WebSocket alerts into an array (max 5); reset on destroy. */
   protected sensorAlerts$!: Observable<SensorAlert[]>;
+  protected dashboardState$: Observable<{
+    loading: boolean;
+    error: string | null;
+    hasData: boolean;
+  }>;
   protected wsConnected = false;
 
   private destroy$ = new Subject<void>();
@@ -271,6 +278,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.overview$ = this.store.select(selectAnalyticsOverview);
     this.creditsOverTime$ = this.store.select(selectCreditsOverTime);
     this.recentRetirements$ = this.store.select(selectRecentRetirements);
+    this.dashboardState$ = this.store.select(
+      selectLoadingState(selectDashboardLoading, selectAnalyticsError, selectAnalyticsOverview),
+    );
 
     // Accumulate live alerts in a local array; reset when component destroys.
     // Initialized here (not as a class field) so wsService is available.

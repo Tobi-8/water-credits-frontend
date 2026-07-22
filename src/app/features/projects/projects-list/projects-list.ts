@@ -11,6 +11,7 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
 import { SearchInputComponent } from '../../../shared/components/search-input/search-input';
 import { EmptyStateComponent } from '../../../shared/components/empty-state/empty-state';
 import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner/loading-spinner';
+import { LoadingStateComponent } from '../../../shared/components/loading-state/loading-state';
 import { Project, ProjectFilters } from '../../../core/models/project.model';
 import * as ProjectsActions from '../../../core/store/projects/projects.actions';
 import {
@@ -33,6 +34,7 @@ import { LucideAngularModule, Plus, LayoutGrid, Table2 } from 'lucide-angular';
     SearchInputComponent,
     EmptyStateComponent,
     LoadingSpinnerComponent,
+    LoadingStateComponent,
     LucideAngularModule,
   ],
   template: `
@@ -105,7 +107,11 @@ import { LucideAngularModule, Plus, LayoutGrid, Table2 } from 'lucide-angular';
       <div *ngIf="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         <ng-container *ngIf="loading$ | async">
           <div class="col-span-full">
-            <app-loading-spinner size="lg" label="Loading projects..."></app-loading-spinner>
+            <app-loading-state
+              [loading]="true"
+              skeleton="card"
+              loadingLabel="Loading projects..."
+            ></app-loading-state>
           </div>
         </ng-container>
         <ng-container *ngIf="!(projects$ | async)?.length">

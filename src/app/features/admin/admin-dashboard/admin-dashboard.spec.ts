@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { reducers } from '../../../core/store/app.state';
@@ -12,7 +13,7 @@ describe('AdminDashboardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AdminDashboardComponent],
-      providers: [provideStore(reducers), provideEffects([])],
+      providers: [provideStore(reducers), provideEffects([]), provideRouter([])],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AdminDashboardComponent);
